@@ -134,13 +134,13 @@ class Core {
 
     let providers = [
       "injected",
+      "torus",
       "walletconnect",
       "walletlink",
-      "arkane",
-      "torus",
-      "portis",
+      "squarelink",
       "fortmatic",
-      "squarelink"
+      "portis",
+      "arkane",
     ];
 
     const { injectedProvider, providerOptions } = this;
