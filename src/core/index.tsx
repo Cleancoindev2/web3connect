@@ -136,6 +136,7 @@ class Core {
       "injected",
       "walletconnect",
       "walletlink",
+      "arkane",
       "torus",
       "portis",
       "fortmatic",
@@ -176,6 +177,11 @@ class Core {
       if (!displayTorus) {
         providers = providers.filter(provider => provider !== "torus");
       }
+
+      if (!this.shouldDisplayProvider("arkane")) {
+        providers = providers.filter(provider => provider !== "arkane");
+      }
+
       if (!this.shouldDisplayProvider("squarelink")) {
         providers = providers.filter(provider => provider !== "squarelink");
       }
@@ -223,7 +229,12 @@ class Core {
             onClick: () =>
               this.connectTo("squarelink", connectors.ConnectToSquarelink)
           };
-
+        case "arkane":
+          return {
+            name: "Arkane",
+            onClick: () =>
+                this.connectTo("arkane", connectors.ConnectToArkane)
+          };
         default:
           return {
             name: "",

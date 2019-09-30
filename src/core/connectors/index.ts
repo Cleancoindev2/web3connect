@@ -5,6 +5,7 @@ import ConnectToPortis from "./portis";
 import ConnectToFortmatic from "./fortmatic";
 import ConnectToTorus from "./torus";
 import ConnectToSquarelink from "./squarelink";
+import ConnectToArkane from "./arkane";
 
 export default {
   ConnectToInjected,
@@ -13,5 +14,6 @@ export default {
   ConnectToPortis,
   ConnectToTorus,
   ConnectToFortmatic,
-  ConnectToSquarelink
+  ConnectToSquarelink,
+  ConnectToArkane
 };
