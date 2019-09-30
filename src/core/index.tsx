@@ -135,6 +135,7 @@ class Core {
     let providers = [
       "injected",
       "walletconnect",
+      "walletlink",
       "torus",
       "portis",
       "fortmatic",
@@ -157,6 +158,10 @@ class Core {
 
       if (!this.shouldDisplayProvider("walletconnect")) {
         providers = providers.filter(provider => provider !== "walletconnect");
+      }
+
+      if (!this.shouldDisplayProvider("walletlink")) {
+        providers = providers.filter(provider => provider !== "walletlink");
       }
 
       if (!this.shouldDisplayProvider("portis")) {
@@ -188,6 +193,12 @@ class Core {
             name: "WalletConnect",
             onClick: () =>
               this.connectTo("walletconnect", connectors.ConnectToWalletConnect)
+          };
+        case "walletlink":
+          return {
+            name: "WalletLink",
+            onClick: () =>
+              this.connectTo("walletlink", connectors.ConnectToWalletLink)
           };
         case "portis":
           return {

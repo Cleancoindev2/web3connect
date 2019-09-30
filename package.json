@@ -40,6 +40,7 @@
     "bootstrap": "npm install && cd example && npm run bootstrap",
     "start": "npm run check && cd example && npm run start",
     "build": "webpack",
+    "prepare": "npm run build",
     "build:example": "npm run bootstrap && npm run build && cd example && npm run build",
     "test": "mocha --require ./babel-polyfill.js test/**/*.spec.js",
     "lint": "tslint ./src/*.ts ./src/**/*.ts",

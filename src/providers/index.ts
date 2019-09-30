@@ -54,6 +54,11 @@ export const providerPackages = {
     name: "@walletconnect/web3-provider",
     option: "walletconnect",
     required: ["infuraId"]
+  },
+  walletlink: {
+    name: "walletlink",
+    option: "walletlink",
+    required: ["infuraId", "appName", "appLogoUrl"]
   }
 };
 
@@ -74,6 +79,15 @@ const providers: IProviderInfo[] = [
     logo: WalletConnectLogo,
     type: "qrcode",
     check: "isWalletConnect",
+    styled: {
+      noShadow: false
+    }
+  },
+  {
+    name: "WalletLink",
+    logo: CoinbaseLogo,
+    type: "qrcode",
+    check: "isWalletLink",
     styled: {
       noShadow: false
     }
