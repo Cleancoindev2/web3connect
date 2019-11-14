@@ -202,7 +202,7 @@ class Core {
           };
         case "walletlink":
           return {
-            name: "WalletLink",
+            name: "Coinbase Wallet",
             onClick: () =>
               this.connectTo("walletlink", connectors.ConnectToWalletLink)
           };

@@ -91,7 +91,7 @@ const providers: IProviderInfo[] = [
     }
   },
   {
-    name: "WalletLink",
+    name: "Coinbase Wallet",
     logo: CoinbaseLogo,
     type: "qrcode",
     check: "isWalletLink",
