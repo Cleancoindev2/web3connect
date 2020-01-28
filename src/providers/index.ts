@@ -6,6 +6,8 @@ import { FALLBACK_INJECTED, injected } from "./injected";
 // @ts-ignore
 import WalletConnectLogo from "./logos/walletconnect-circle.svg";
 // @ts-ignore
+import CoinbaseLogo from "./logos/coinbase.svg";
+// @ts-ignore
 import PortisLogo from "./logos/portis.svg";
 // @ts-ignore
 import SquarelinkLogo from "./logos/squarelink.svg";
@@ -31,6 +33,20 @@ export const WALLETCONNECT_PROVIDER: IProviderInfo = {
   },
   package: {
     required: ["infuraId"]
+  }
+};
+
+export const WALLETLINK_PROVIDER: IProviderInfo = {
+  id: "walletlink",
+  name: "Coinbase Wallet",
+  logo: CoinbaseLogo,
+  type: "qrcode",
+  check: "isWalletLink",
+  styled: {
+    noShadow: false
+  },
+  package: {
+    required: ["infuraId", "appName", "appLogoUrl"]
   }
 };
 
@@ -141,6 +157,12 @@ export const providerMapping: IProviderMappingEntry[] = [
     name: WALLETCONNECT_PROVIDER.name,
     connector: connectors.walletconnect,
     package: WALLETCONNECT_PROVIDER.package
+  },
+  {
+    id: WALLETLINK_PROVIDER.id,
+    name: WALLETLINK_PROVIDER.name,
+    connector: connectors.walletlink,
+    package: WALLETLINK_PROVIDER.package
   },
   {
     id: PORTIS_PROVIDER.id,
