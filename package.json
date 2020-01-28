@@ -1,6 +1,6 @@
 {
-  "name": "@totle/web3connect",
-  "version": "1.0.0-beta.25",
+  "name": "web3connect",
+  "version": "1.0.0-beta.26",
   "description": "A single Web3 / Ethereum provider solution for all Wallets",
   "keywords": [
     "web3",
@@ -13,7 +13,8 @@
     "portis",
     "fortmatic",
     "arkane",
-    "torus"
+    "torus",
+    "authereum"
   ],
   "author": "Web3Connect <web3connect.com>",
   "license": "LGPL-3.0",

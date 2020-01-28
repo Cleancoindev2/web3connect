@@ -1,14 +1,20 @@
 import * as React from 'react'
 import styled from 'styled-components'
 import Web3 from 'web3'
+
 import Web3Connect from 'web3connect'
 // @ts-ignore
 import WalletConnectProvider from '@walletconnect/web3-provider'
 import Portis from '@portis/web3'
-import Torus from '@toruslabs/torus-embed'
 // @ts-ignore
 import Fortmatic from 'fortmatic'
-import Arkane from '@arkane-network/web3-arkane-provider'
+
+// @ts-ignore
+// import Squarelink from 'squarelink'
+// import Torus from '@toruslabs/torus-embed'
+// import Arkane from "@arkane-network/web3-arkane-provider";
+// import Authereum from "authereum";
+
 import { convertUtf8ToHex } from '@walletconnect/utils'
 import Button from './components/Button'
 import Column from './components/Column'
@@ -26,6 +32,47 @@ import {
 } from './helpers/utilities'
 import { IAssetData } from './helpers/types'
 import { fonts } from './styles'
+
+const providerOptions = {
+  walletconnect: {
+    package: WalletConnectProvider,
+    options: {
+      infuraId: process.env.REACT_APP_INFURA_ID
+    }
+  },
+  portis: {
+    package: Portis,
+    options: {
+      id: process.env.REACT_APP_PORTIS_ID
+    }
+  },
+  fortmatic: {
+    package: Fortmatic,
+    options: {
+      key: process.env.REACT_APP_FORTMATIC_KEY
+    }
+  }
+  // arkane: {
+  //   package: Arkane,
+  //   options: {
+  //     clientId: process.env.REACT_APP_ARKANE_CLIENT_ID,
+  //     environment: "staging"
+  //   }
+  // },
+  // authereum: {
+  //   package: Authereum,
+  //   options: {}
+  // },
+  // squarelink: {
+  //   package: Squarelink,
+  //   options: {
+  //     id: process.env.REACT_APP_SQUARELINK_ID
+  //   }
+  // },
+  // torus: {
+  //   package: Torus
+  // }
+}
 
 const SLayout = styled.div`
   position: relative;
@@ -141,29 +188,37 @@ const INITIAL_STATE: IAppState = {
   result: null
 }
 
+function initWeb3(provider: any) {
+  const web3: any = new Web3(provider)
+
+  web3.eth.extend({
+    methods: [
+      {
+        name: 'chainId',
+        call: 'eth_chainId',
+        outputFormatter: web3.utils.hexToNumber
+      }
+    ]
+  })
+
+  return web3
+}
+
 class App extends React.Component<any, any> {
   public state: IAppState = {
     ...INITIAL_STATE
   }
 
   public onConnect = async (provider: any) => {
-    const web3: any = new Web3(provider)
+    await this.subscribeProvider(provider)
+
+    const web3: any = initWeb3(provider)
 
     const accounts = await web3.eth.getAccounts()
 
     const address = accounts[0]
 
     const networkId = await web3.eth.net.getId()
-
-    web3.eth.extend({
-      methods: [
-        {
-          name: 'chainId',
-          call: 'eth_chainId',
-          outputFormatter: web3.utils.hexToNumber
-        }
-      ]
-    })
 
     const chainId = await web3.eth.chainId()
 
@@ -175,6 +230,27 @@ class App extends React.Component<any, any> {
       networkId
     })
     await this.getAccountAssets()
+  }
+
+  public subscribeProvider = async (provider: any) => {
+    provider.on('close', () => this.resetApp())
+    provider.on('accountsChanged', async (accounts: string[]) => {
+      await this.setState({ address: accounts[0] })
+      await this.getAccountAssets()
+    })
+    provider.on('chainChanged', async (chainId: number) => {
+      const { web3 } = this.state
+      const networkId = await web3.eth.net.getId()
+      await this.setState({ chainId, networkId })
+      await this.getAccountAssets()
+    })
+
+    provider.on('networkChanged', async (networkId: number) => {
+      const { web3 } = this.state
+      const chainId = await web3.eth.chainId()
+      await this.setState({ chainId, networkId })
+      await this.getAccountAssets()
+    })
   }
 
   public getAccountAssets = async () => {
@@ -341,8 +417,8 @@ class App extends React.Component<any, any> {
 
   public resetApp = async () => {
     const { web3 } = this.state
-    console.log('web3.currentProvider', web3.currentProvider) // tslint:disable-line
     if (web3 && web3.currentProvider && web3.currentProvider.close) {
+      console.log('web3.currentProvider', web3.currentProvider) // tslint:disable-line
       await web3.currentProvider.close()
     }
     this.setState({ ...INITIAL_STATE })
@@ -402,36 +478,7 @@ class App extends React.Component<any, any> {
                 <h3>{`Test Web3Connect`}</h3>
                 <Web3Connect.Button
                   network="mainnet"
-                  providerOptions={{
-                    walletconnect: {
-                      package: WalletConnectProvider,
-                      options: {
-                        infuraId: process.env.REACT_APP_INFURA_ID
-                      }
-                    },
-                    torus : {
-                      package: Torus
-                    },
-                    portis: {
-                      package: Portis,
-                      options: {
-                        id: process.env.REACT_APP_PORTIS_ID
-                      }
-                    },
-                    fortmatic: {
-                      package: Fortmatic,
-                      options: {
-                        key: process.env.REACT_APP_FORTMATIC_KEY
-                      }
-                    },
-                    arkane: {
-                      package: Arkane,
-                      options: {
-                        clientId: process.env.REACT_APP_ARKANE_CLIENT_ID,
-                        environment: 'staging'
-                      }
-                    }
-                  }}
+                  providerOptions={providerOptions}
                   onConnect={(provider: any) => {
                     this.onConnect(provider)
                   }}

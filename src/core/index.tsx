@@ -2,87 +2,76 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 import Modal from "../components/Modal";
 import { IProviderOptions, IProviderCallback } from "../helpers/types";
-import { isMobile, getInjectedProviderName } from "../helpers/utils";
-import connectors from "./connectors";
-import EventManager from "./events";
-import { providerPackages } from "../providers";
 
-const WEB3_CONNECT_MODAL_ID = "WEB3_CONNECT_MODAL_ID";
+import EventController from "./controllers/events";
+import ProviderController from "./controllers/providers";
+import {
+  WEB3_CONNECT_MODAL_ID,
+  CONNECT_EVENT,
+  ERROR_EVENT,
+  CLOSE_EVENT
+} from "../helpers/constants";
 
 interface ICoreOptions {
-  modal?: boolean;
-  network?: string;
-  lightboxOpacity?: number;
-  providerOptions?: IProviderOptions;
+  network: string;
+  lightboxOpacity: number;
+  providerOptions: IProviderOptions;
 }
 
 const INITIAL_STATE = { show: false };
 
 class Core {
   private show: boolean = INITIAL_STATE.show;
-  private eventManager: EventManager = new EventManager();
-  private injectedProvider: string | null = null;
-  private network: string = "";
-  private lightboxOpacity: number = 0.4;
-  private providerOptions: IProviderOptions = {};
+  private eventController: EventController = new EventController();
+  private lightboxOpacity: number;
+  private providerController: ProviderController;
   private providers: IProviderCallback[];
 
-  constructor(opts?: ICoreOptions) {
-    this.injectedProvider = getInjectedProviderName();
+  constructor(opts?: Partial<ICoreOptions>) {
+    const options: ICoreOptions = {
+      lightboxOpacity: 0.4,
+      providerOptions: {},
+      network: "",
+      ...opts
+    };
 
-    if (opts) {
-      this.network = opts.network || "";
-      this.lightboxOpacity = opts.lightboxOpacity || 0.4;
-      this.providerOptions = opts.providerOptions || {};
-    }
+    this.lightboxOpacity = options.lightboxOpacity;
 
-    this.providers = this.getProviders();
+    this.providerController = new ProviderController({
+      providerOptions: options.providerOptions,
+      network: options.network
+    });
 
+    this.providerController.on(CONNECT_EVENT, provider =>
+      this.onConnect(provider)
+    );
+    this.providerController.on(ERROR_EVENT, error => this.onError(error));
+
+    this.providers = this.providerController.getProviders();
     this.renderModal();
   }
 
-  public on(event: string, callback: (result: any) => void): void {
-    this.eventManager.on({
+  // --------------- PUBLIC METHODS --------------- //
+
+  public on(event: string, callback: (result: any) => void): () => void {
+    this.eventController.on({
+      event,
+      callback
+    });
+
+    return () =>
+      this.eventController.off({
+        event,
+        callback
+      });
+  }
+
+  public off(event: string, callback?: (result: any) => void): void {
+    this.eventController.off({
       event,
       callback
     });
   }
-
-  public connectToInjected = async () => {
-    try {
-      const provider = await connectors.ConnectToInjected();
-      await this.onConnect(provider);
-    } catch (error) {
-      await this.onError(error);
-    }
-  };
-
-  public connectTo = async (
-    name: string,
-    connector: (providerPackage: any, opts: any) => Promise<any>
-  ) => {
-    try {
-      const providerPackage =
-        this.providerOptions &&
-        this.providerOptions[name] &&
-        this.providerOptions[name].package
-          ? this.providerOptions[name].package
-          : {};
-      const providerOptions =
-        this.providerOptions &&
-        this.providerOptions[name] &&
-        this.providerOptions[name].options
-          ? this.providerOptions[name].options
-          : {};
-      const opts = this.network
-        ? { network: this.network, ...providerOptions }
-        : providerOptions;
-      const provider = await connector(providerPackage, opts);
-      await this.onConnect(provider);
-    } catch (error) {
-      await this.onError(error);
-    }
-  };
 
   public toggleModal = async () => {
     if (
@@ -106,178 +95,6 @@ class Core {
     await this.updateState({ show: !this.show });
   };
 
-  public shouldDisplayProvider(name: string) {
-    const { providerOptions } = this;
-    const providerPackage = providerPackages[name];
-
-    if (providerOptions) {
-      const providerPackageOptions = providerOptions[providerPackage.option];
-      if (providerPackageOptions) {
-        const required = providerPackage.required;
-        const matches = required.filter(
-          (key: string) => key in providerPackageOptions.options
-        );
-        if (required.length === matches.length) {
-          const isProvided = providerPackageOptions.package;
-          if (isProvided) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
-  public getProviders = () => {
-    const mobile = isMobile();
-
-    let providers = [
-      "injected",
-      "torus",
-      "walletconnect",
-      "walletlink",
-      "squarelink",
-      "fortmatic",
-      "portis",
-      "arkane",
-    ];
-
-    const { injectedProvider, providerOptions } = this;
-
-    const displayInjected =
-      injectedProvider && !providerOptions.disableInjectedProvider;
-
-    const onlyInjected = displayInjected && mobile;
-
-    if (onlyInjected) {
-      providers = ["injected"];
-    } else {
-      if (!displayInjected) {
-        providers = providers.filter(provider => provider !== "injected");
-      }
-
-      if (!this.shouldDisplayProvider("walletconnect")) {
-        providers = providers.filter(provider => provider !== "walletconnect");
-      }
-
-      if (!this.shouldDisplayProvider("walletlink")) {
-        providers = providers.filter(provider => provider !== "walletlink");
-      }
-
-      if (!this.shouldDisplayProvider("portis")) {
-        providers = providers.filter(provider => provider !== "portis");
-      }
-
-      if (!this.shouldDisplayProvider("fortmatic")) {
-        providers = providers.filter(provider => provider !== "fortmatic");
-      }
-      const displayTorus =
-        providerOptions && providerOptions.torus
-      if (!displayTorus) {
-        providers = providers.filter(provider => provider !== "torus");
-      }
-
-      if (!this.shouldDisplayProvider("arkane")) {
-        providers = providers.filter(provider => provider !== "arkane");
-      }
-
-      if (!this.shouldDisplayProvider("squarelink")) {
-        providers = providers.filter(provider => provider !== "squarelink");
-      }
-    }
-
-    const providersMap = providers.map(provider => {
-      switch (provider) {
-        case "injected":
-          return {
-            name: injectedProvider,
-            onClick: this.connectToInjected
-          };
-        case "walletconnect":
-          return {
-            name: "WalletConnect",
-            onClick: () =>
-              this.connectTo("walletconnect", connectors.ConnectToWalletConnect)
-          };
-        case "walletlink":
-          return {
-            name: "Coinbase Wallet",
-            onClick: () =>
-              this.connectTo("walletlink", connectors.ConnectToWalletLink)
-          };
-        case "portis":
-          return {
-            name: "Portis",
-            onClick: () => this.connectTo("portis", connectors.ConnectToPortis)
-          };
-        case "fortmatic":
-          return {
-            name: "Fortmatic",
-            onClick: () =>
-              this.connectTo("fortmatic", connectors.ConnectToFortmatic)
-          };
-        case "torus":
-          return {
-            name: "Google",
-            onClick: () =>
-              this.connectTo("torus", connectors.ConnectToTorus)
-        };
-        case "squarelink":
-          return {
-            name: "Squarelink",
-            onClick: () =>
-              this.connectTo("squarelink", connectors.ConnectToSquarelink)
-          };
-        case "arkane":
-          return {
-            name: "Arkane",
-            onClick: () =>
-                this.connectTo("arkane", connectors.ConnectToArkane)
-          };
-        default:
-          return {
-            name: "",
-            onClick: async () => {
-              // empty
-            }
-          };
-      }
-    });
-
-    return providersMap;
-  };
-
-  private onError = async (error: any) => {
-    if (this.show) {
-      await this.toggleModal();
-    }
-    this.eventManager.trigger("error", error);
-  };
-
-  private onConnect = async (provider: any) => {
-    if (this.show) {
-      await this.toggleModal();
-    }
-    this.eventManager.trigger("connect", provider);
-  };
-
-  private onClose = async () => {
-    if (this.show) {
-      await this.toggleModal();
-    }
-    this.eventManager.trigger("close");
-  };
-
-  private updateState = async (state: any) => {
-    Object.keys(state).forEach(key => {
-      this[key] = state[key];
-    });
-    await window.updateWeb3ConnectModal(state);
-  };
-
-  private resetState = () => this.updateState({ ...INITIAL_STATE });
-
   public renderModal() {
     const el = document.createElement("div");
     el.id = WEB3_CONNECT_MODAL_ID;
@@ -293,6 +110,38 @@ class Core {
       document.getElementById(WEB3_CONNECT_MODAL_ID)
     );
   }
+
+  // --------------- PRIVATE METHODS --------------- //
+
+  private onError = async (error: any) => {
+    if (this.show) {
+      await this.toggleModal();
+    }
+    this.eventController.trigger(ERROR_EVENT, error);
+  };
+
+  private onConnect = async (provider: any) => {
+    if (this.show) {
+      await this.toggleModal();
+    }
+    this.eventController.trigger(CONNECT_EVENT, provider);
+  };
+
+  private onClose = async () => {
+    if (this.show) {
+      await this.toggleModal();
+    }
+    this.eventController.trigger(CLOSE_EVENT);
+  };
+
+  private updateState = async (state: any) => {
+    Object.keys(state).forEach(key => {
+      this[key] = state[key];
+    });
+    await window.updateWeb3ConnectModal(state);
+  };
+
+  private resetState = () => this.updateState({ ...INITIAL_STATE });
 }
 
 export default Core;
